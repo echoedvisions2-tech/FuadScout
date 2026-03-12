@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scoutier — Bulk Email Outreach Tool</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0e0e0f;
+  --surface: #161618;
+  --surface2: #1e1e21;
+  --border: rgba(255,255,255,0.08);
+  --border-bright: rgba(255,255,255,0.15);
+  --text: #f0ede8;
+  --text-soft: #9a9896;
+  --text-muted: #5a5856;
+  --accent: #00e5a0;
+  --accent-dim: rgba(0,229,160,0.12);
+  --accent-glow: rgba(0,229,160,0.25);
+  --warn: #ff6b35;
+  --warn-dim: rgba(255,107,53,0.12);
+  --blue: #4f9eff;
+  --blue-dim: rgba(79,158,255,0.12);
+  --radius: 8px;
+  --mono: 'DM Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+  --display: 'Syne', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.6;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+/* ── LAYOUT ── */
+.app {
+  display: grid;
+  grid-template-rows: 56px 1fr;
+  grid-template-columns: 260px 1fr;
+  height: 100vh;
+}
+
+/* ── TOP BAR ── */
+.topbar {
+  grid-column: 1 / -1;
+  display: flex; align-items: center;
+  padding: 0 1.5rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  gap: 1rem;
+  z-index: 10;
+}
+.brand {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.1rem;
+  letter-spacing: -0.03em;
+  display: flex; align-items: center; gap: 0.4rem;
+}
+.brand-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: inline-block; animation: pulse 2s ease infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+.topbar-spacer { flex: 1; }
+.topbar-stat {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.78rem; color: var(--text-soft);
+  background: var(--surface2);
+  padding: 0.3rem 0.8rem;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+}
+.topbar-stat strong { color: var(--accent); font-family: var(--mono); }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 1.5rem 1rem;
+  display: flex; flex-direction: column; gap: 0.25rem;
+  overflow-y: auto;
+}
+.sidebar-section-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0.75rem 0.5rem 0.4rem;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 0.65rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.88rem;
+  color: var(--text-soft);
+  border: none; background: none; width: 100%; text-align: left;
+  transition: background 0.15s, color 0.15s;
+}
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: var(--accent-dim); color: var(--accent); }
+.nav-icon { font-size: 0.95rem; width: 18px; text-align: center; }
+.nav-badge {
+  margin-left: auto;
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-size: 0.65rem;
+  font-weight: 700;
+  font-family: var(--mono);
+  padding: 0.1rem 0.45rem;
+  border-radius: 100px;
+}
+
+/* ── MAIN ── */
+.main {
+  overflow-y: auto;
+  background: var(--bg);
+  padding: 2rem;
+}
+
+/* ── PANELS ── */
+.panel { display: none; flex-direction: column; gap: 1.5rem; }
+.panel.active { display: flex; }
+
+.page-header { margin-bottom: 0.5rem; }
+.page-title {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.4rem;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.2rem;
+}
+.page-sub { font-size: 0.85rem; color: var(--text-soft); }
+
+/* ── CARD ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+.card-title {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.card-title .tag {
+  font-size: 0.65rem; font-family: var(--mono); font-weight: 400;
+  background: var(--accent-dim); color: var(--accent);
+  padding: 0.1rem 0.5rem; border-radius: 100px;
+}
+
+/* ── FORM ELEMENTS ── */
+label { font-size: 0.8rem; color: var(--text-soft); display: block; margin-bottom: 0.4rem; font-weight: 500; }
+input[type=text], input[type=email], textarea, select {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+textarea { resize: vertical; min-height: 120px; line-height: 1.65; }
+select { cursor: pointer; }
+.input-group { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1rem; }
+.input-hint { font-size: 0.75rem; color: var(--text-muted); }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer; border: none;
+  transition: transform 0.1s, opacity 0.15s, box-shadow 0.15s;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn-primary { background: var(--accent); color: #0e0e0f; box-shadow: 0 0 20px var(--accent-glow); }
+.btn-primary:hover { box-shadow: 0 0 32px var(--accent-glow); }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { border-color: var(--border-bright); }
+.btn-warn { background: var(--warn); color: #fff; }
+.btn-ghost { background: transparent; color: var(--text-soft); border: 1px solid var(--border); }
+.btn-ghost:hover { color: var(--text); border-color: var(--border-bright); }
+.btn-sm { padding: 0.4rem 0.8rem; font-size: 0.78rem; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+.btn-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+
+/* ── UPLOAD ZONE ── */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 2.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  position: relative;
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+.upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.upload-icon { font-size: 2rem; margin-bottom: 0.75rem; display: block; }
+.upload-zone p { font-size: 0.88rem; color: var(--text-soft); }
+.upload-zone strong { color: var(--text); }
+
+/* ── EMAIL LIST ── */
+.email-textarea-wrap { position: relative; }
+.email-count-badge {
+  position: absolute; top: 0.6rem; right: 0.6rem;
+  font-family: var(--mono); font-size: 0.7rem;
+  background: var(--surface);
+  color: var(--text-muted);
+  padding: 0.15rem 0.5rem; border-radius: 100px;
+  border: 1px solid var(--border);
+  pointer-events: none;
+}
+
+/* ── CONTACTS TABLE ── */
+.table-wrap { overflow-x: auto; border-radius: 6px; border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+thead { background: var(--surface2); }
+th { padding: 0.65rem 1rem; text-align: left; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+td { padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); color: var(--text-soft); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface2); color: var(--text); }
+.badge {
+  display: inline-flex; align-items: center;
+  font-size: 0.68rem; font-family: var(--mono);
+  padding: 0.1rem 0.5rem; border-radius: 100px;
+}
+.badge-green { background: var(--accent-dim); color: var(--accent); }
+.badge-orange { background: var(--warn-dim); color: var(--warn); }
+.badge-blue { background: var(--blue-dim); color: var(--blue); }
+
+/* ── PROGRESS ── */
+.progress-bar-wrap { background: var(--surface2); border-radius: 100px; height: 6px; overflow: hidden; margin-top: 0.5rem; }
+.progress-bar { height: 100%; background: var(--accent); border-radius: 100px; width: 0%; transition: width 0.3s ease; box-shadow: 0 0 8px var(--accent-glow); }
+
+/* ── STATS GRID ── */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+.stat-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.2rem 1.5rem;
+}
+.stat-box .stat-val {
+  font-family: var(--mono);
+  font-size: 1.8rem;
+  font-weight: 500;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 0.3rem;
+}
+.stat-box .stat-label { font-size: 0.75rem; color: var(--text-muted); }
+
+/* ── OUTPUT ── */
+.output-area {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.2rem;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--text-soft);
+  max-height: 340px;
+  overflow-y: auto;
+  line-height: 1.7;
+}
+.output-line { padding: 0.1rem 0; }
+.output-line .ts { color: var(--text-muted); margin-right: 0.5rem; }
+.output-line.ok .msg { color: var(--accent); }
+.output-line.warn .msg { color: var(--warn); }
+.output-line.info .msg { color: var(--blue); }
+
+/* ── TEMPLATE PREVIEW ── */
+.template-preview {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.2rem;
+  font-size: 0.88rem;
+  line-height: 1.75;
+  color: var(--text-soft);
+  white-space: pre-wrap;
+}
+.tpl-tag { color: var(--accent); font-family: var(--mono); font-size: 0.82rem; }
+
+/* ── TOGGLE ── */
+.toggle-group { display: flex; gap: 0.5rem; }
+.toggle-btn {
+  padding: 0.45rem 1rem;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-family: var(--display);
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-soft);
+  transition: all 0.15s;
+}
+.toggle-btn.active { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 100px; }
+
+/* ── EMPTY STATE ── */
+.empty-state { text-align: center; padding: 3rem; color: var(--text-muted); }
+.empty-state .es-icon { font-size: 2.5rem; margin-bottom: 0.75rem; display: block; }
+.empty-state p { font-size: 0.85rem; }
+
+/* ── TOAST ── */
+#toast {
+  position: fixed; bottom: 1.5rem; right: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border-bright);
+  color: var(--text);
+  font-size: 0.85rem;
+  padding: 0.75rem 1.2rem;
+  border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  transform: translateY(80px); opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  z-index: 999;
+  display: flex; align-items: center; gap: 0.5rem;
+  max-width: 320px;
+}
+#toast.show { transform: translateY(0); opacity: 1; }
+#toast .toast-icon { font-size: 1rem; }
+
+/* ── DIVIDER ── */
+.divider { border: none; border-top: 1px solid var(--border); margin: 0.5rem 0; }
+
+/* ── STEP INDICATOR ── */
+.steps-indicator {
+  display: flex; align-items: center; gap: 0;
+  margin-bottom: 1.5rem;
+}
+.step-item {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.78rem; color: var(--text-muted);
+}
+.step-item.active { color: var(--accent); }
+.step-item.done { color: var(--text-soft); }
+.step-num {
+  width: 22px; height: 22px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; font-weight: 700; font-family: var(--mono);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text-muted);
+}
+.step-item.active .step-num { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+.step-item.done .step-num { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.step-connector { width: 2rem; height: 1px; background: var(--border); }
+
+@media (max-width: 768px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: 56px 1fr; }
+  .sidebar { display: none; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="brand"><span class="brand-dot"></span>Scoutier</div>
+    <div class="topbar-spacer"></div>
+    <div class="topbar-stat">Session emails sent: <strong id="sessionCount">0</strong></div>
+    <div class="topbar-stat" style="background:var(--accent-dim);border-color:var(--accent);">Contacts loaded: <strong id="contactsLoaded" style="color:var(--accent)">0</strong></div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-section-label">Workspace</div>
+    <button class="nav-item active" onclick="showPanel('compose')" id="nav-compose">
+      <span class="nav-icon">✍️</span> Compose
+    </button>
+    <button class="nav-item" onclick="showPanel('contacts')" id="nav-contacts">
+      <span class="nav-icon">👥</span> Contacts
+      <span class="nav-badge" id="contactsBadge">0</span>
+    </button>
+    <button class="nav-item" onclick="showPanel('templates')" id="nav-templates">
+      <span class="nav-icon">📋</span> Templates
+    </button>
+    <button class="nav-item" onclick="showPanel('launch')" id="nav-launch">
+      <span class="nav-icon">🚀</span> Launch
+    </button>
+
+    <div class="sidebar-section-label">Analytics</div>
+    <button class="nav-item" onclick="showPanel('analytics')" id="nav-analytics">
+      <span class="nav-icon">📊</span> Analytics
+    </button>
+
+    <div style="flex:1"></div>
+    <div style="padding:0.75rem; background:var(--accent-dim); border-radius:var(--radius); border:1px solid rgba(0,229,160,0.2);">
+      <div style="font-size:0.75rem; color:var(--accent); font-weight:600; margin-bottom:0.25rem;">✦ 100% Free</div>
+      <div style="font-size:0.72rem; color:var(--text-muted); line-height:1.5;">All features included. No credit card needed. Your data stays in your browser.</div>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- ── COMPOSE PANEL ── -->
+    <div class="panel active" id="panel-compose">
+      <div class="page-header">
+        <div class="page-title">Compose Campaign</div>
+        <div class="page-sub">Paste or upload contacts, write your email, and generate personalized outreach at scale.</div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
+        <!-- Left: Import contacts -->
+        <div class="card">
+          <div class="card-title">📥 Import Contacts <span class="tag">Step 1</span></div>
+
+          <div class="upload-zone" id="uploadZone">
+            <input type="file" id="fileInput" accept=".csv,.txt,.xlsx">
+            <span class="upload-icon">📂</span>
+            <p><strong>Drop CSV or TXT file here</strong><br>or click to browse</p>
+          </div>
+
+          <div style="text-align:center;margin:0.75rem 0;font-size:0.78rem;color:var(--text-muted);">— or paste emails below —</div>
+
+          <div class="input-group">
+            <label>Email addresses (one per line or comma-separated)</label>
+            <div class="email-textarea-wrap">
+              <textarea id="emailInput" placeholder="john@acme.com&#10;sarah@startup.io&#10;ceo@bigcorp.com" style="min-height:160px" oninput="updateEmailCount()"></textarea>
+              <span class="email-count-badge" id="emailCountBadge">0 emails</span>
+            </div>
+            <div class="input-hint">Tip: We'll auto-extract names from email addresses using AI logic.</div>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn btn-primary btn-sm" onclick="parseContacts()">⚡ Parse Contacts</button>
+            <button class="btn btn-ghost btn-sm" onclick="clearContacts()">Clear</button>
+          </div>
+        </div>
+
+        <!-- Right: Email settings -->
+        <div class="card">
+          <div class="card-title">⚙️ Email Settings <span class="tag">Step 2</span></div>
+
+          <div class="input-group">
+            <label>Your Name (Sender)</label>
+            <input type="text" id="senderName" placeholder="Chidi Okafor" value="">
+          </div>
+          <div class="input-group">
+            <label>Your Email Address</label>
+            <input type="email" id="senderEmail" placeholder="chidi@yourcompany.com">
+          </div>
+          <div class="input-group">
+            <label>Subject Line <span style="color:var(--accent);font-size:0.72rem;">(use {name} or {company} for personalization)</span></label>
+            <input type="text" id="subject" value="Quick question, {name}" placeholder="Quick question, {name}">
+          </div>
+          <div class="input-group">
+            <label>Tone</label>
+            <select id="tone">
+              <option value="professional">Professional</option>
+              <option value="friendly" selected>Friendly & Casual</option>
+              <option value="bold">Bold & Direct</option>
+              <option value="formal">Formal</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Email body -->
+      <div class="card">
+        <div class="card-title">✉️ Email Body <span class="tag">Step 3 · Use {name} and {company} for personalization</span></div>
+        <div class="input-group">
+          <textarea id="emailBody" style="min-height:180px" placeholder="Hi {name},
+
+I came across {company} and was really impressed by what you're building.
+
+I wanted to reach out because...
+
+Looking forward to hearing from you!
+
+Best,
+{sender_name}"></textarea>
+          <div class="input-hint">Available tags: <code style="color:var(--accent);background:var(--accent-dim);padding:0 4px;border-radius:3px;">{name}</code> <code style="color:var(--accent);background:var(--accent-dim);padding:0 4px;border-radius:3px;">{company}</code> <code style="color:var(--accent);background:var(--accent-dim);padding:0 4px;border-radius:3px;">{email}</code> <code style="color:var(--accent);background:var(--accent-dim);padding:0 4px;border-radius:3px;">{sender_name}</code></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="showPanel('launch')">Generate Emails →</button>
+          <button class="btn btn-secondary" onclick="previewSingle()">👁 Preview Single</button>
+          <button class="btn btn-ghost" onclick="saveTemplate()">💾 Save as Template</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CONTACTS PANEL ── -->
+    <div class="panel" id="panel-contacts">
+      <div class="page-header">
+        <div class="page-title">Contacts</div>
+        <div class="page-sub">All parsed contacts with AI-extracted names and company data.</div>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+          <div class="card-title" style="margin:0">👥 Contact List</div>
+          <div style="display:flex;gap:0.5rem;">
+            <input type="text" id="contactSearch" placeholder="🔍 Search..." style="width:200px;padding:0.4rem 0.75rem;font-size:0.82rem;" oninput="renderContacts()">
+            <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⬇ Export CSV</button>
+          </div>
+        </div>
+        <div class="table-wrap" id="contactsTable">
+          <div class="empty-state">
+            <span class="es-icon">👤</span>
+            <p>No contacts yet. Go to <strong>Compose</strong> and paste some emails to get started.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TEMPLATES PANEL ── -->
+    <div class="panel" id="panel-templates">
+      <div class="page-header">
+        <div class="page-title">Templates</div>
+        <div class="page-sub">Reusable email templates. Save time on every campaign.</div>
+      </div>
+      <div id="templatesGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;">
+        <!-- Prebuilt templates injected by JS -->
+      </div>
+    </div>
+
+    <!-- ── LAUNCH PANEL ── -->
+    <div class="panel" id="panel-launch">
+      <div class="page-header">
+        <div class="page-title">Launch Campaign</div>
+        <div class="page-sub">Review your generated emails and copy them ready to send.</div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-val" id="launchTotal">0</div><div class="stat-label">Total contacts</div></div>
+        <div class="stat-box"><div class="stat-val" id="launchReady" style="color:var(--accent)">0</div><div class="stat-label">Emails ready</div></div>
+        <div class="stat-box"><div class="stat-val" id="launchDupes" style="color:var(--warn)">0</div><div class="stat-label">Duplicates removed</div></div>
+        <div class="stat-box"><div class="stat-val" id="launchInvalid" style="color:var(--blue)">0</div><div class="stat-label">Invalid skipped</div></div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+          <div class="card-title" style="margin:0">🚀 Generated Emails</div>
+          <div class="btn-row">
+            <button class="btn btn-primary btn-sm" onclick="generateAll()">⚡ Generate All</button>
+            <button class="btn btn-ghost btn-sm" onclick="copyAll()">📋 Copy All</button>
+            <button class="btn btn-ghost btn-sm" onclick="downloadAll()">⬇ Download .txt</button>
+          </div>
+        </div>
+
+        <div style="margin-bottom:1rem;">
+          <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--text-muted);margin-bottom:0.3rem;">
+            <span>Generation progress</span>
+            <span id="progressText">0 / 0</span>
+          </div>
+          <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+        </div>
+
+        <div id="generatedOutput" class="output-area">
+          <div class="empty-state" style="padding:2rem 0;">
+            <span class="es-icon" style="font-size:1.8rem;">📭</span>
+            <p>Click <strong>Generate All</strong> to create personalized emails for all contacts.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Individual preview -->
+      <div class="card" id="previewCard" style="display:none;">
+        <div class="card-title">👁 Email Preview</div>
+        <div style="margin-bottom:0.5rem;font-size:0.8rem;">
+          <span style="color:var(--text-muted)">To:</span> <span id="previewTo" style="color:var(--blue);font-family:var(--mono)"></span>
+          <span style="color:var(--text-muted);margin-left:1rem">Subject:</span> <span id="previewSubject" style="color:var(--text)"></span>
+        </div>
+        <hr class="divider">
+        <div class="template-preview" id="previewBody"></div>
+        <div class="btn-row" style="margin-top:1rem;">
+          <button class="btn btn-primary btn-sm" onclick="copyPreview()">📋 Copy Email</button>
+          <button class="btn btn-ghost btn-sm" onclick="openMailto()">📨 Open in Mail App</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ANALYTICS PANEL ── -->
+    <div class="panel" id="panel-analytics">
+      <div class="page-header">
+        <div class="page-title">Analytics</div>
+        <div class="page-sub">Session statistics and campaign performance overview.</div>
+      </div>
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);">
+        <div class="stat-box"><div class="stat-val" id="aTotal">0</div><div class="stat-label">Contacts imported</div></div>
+        <div class="stat-box"><div class="stat-val" id="aGenerated">0</div><div class="stat-label">Emails generated</div></div>
+        <div class="stat-box"><div class="stat-val" id="aDupes">0</div><div class="stat-label">Duplicates caught</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 Activity Log</div>
+        <div class="output-area" id="activityLog">
+          <div class="output-line info"><span class="ts">[init]</span><span class="msg">Scoutier ready. Import contacts to begin.</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📤 Outreach Tips</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div style="background:var(--surface2);border-radius:6px;padding:1rem;border-left:3px solid var(--accent);">
+            <div style="font-weight:600;font-size:0.85rem;margin-bottom:0.35rem;">✦ Best send time</div>
+            <div style="font-size:0.8rem;color:var(--text-soft);">Tuesday–Thursday, 8–10am or 2–4pm in recipient's timezone get the highest open rates.</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:6px;padding:1rem;border-left:3px solid var(--blue);">
+            <div style="font-weight:600;font-size:0.85rem;margin-bottom:0.35rem;">✦ Subject lines</div>
+            <div style="font-size:0.8rem;color:var(--text-soft);">Keep subjects under 9 words. Questions and curiosity gaps outperform statements by 2×.</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:6px;padding:1rem;border-left:3px solid var(--warn);">
+            <div style="font-weight:600;font-size:0.85rem;margin-bottom:0.35rem;">✦ Personalization</div>
+            <div style="font-size:0.8rem;color:var(--text-soft);">Using {name} in the first line increases reply rate by up to 38% vs generic greetings.</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:6px;padding:1rem;border-left:3px solid #a78bfa;">
+            <div style="font-weight:600;font-size:0.85rem;margin-bottom:0.35rem;">✦ Follow-ups</div>
+            <div style="font-size:0.8rem;color:var(--text-soft);">80% of deals happen after the 5th follow-up. Wait 3–5 days between each touch.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- TOAST -->
+<div id="toast"><span class="toast-icon">✓</span><span id="toastMsg"></span></div>
+
+<script>
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+const state = {
+  contacts: [],        // { email, name, company, valid, duplicate }
+  generated: [],       // { email, name, company, subject, body }
+  sessionCount: 0,
+  dupesCount: 0,
+  invalidCount: 0,
+  templates: [],
+  activityLog: [],
+};
+
+const BUILT_IN_TEMPLATES = [
+  {
+    id: 'cold-intro',
+    name: '🤝 Cold Introduction',
+    subject: 'Quick question for you, {name}',
+    body: `Hi {name},
+
+I came across {company} and was genuinely impressed by what you're doing.
+
+I'm reaching out because I think there might be a great fit between us — I'd love to connect and explore if we can create some value together.
+
+Would you be open to a quick 15-minute chat this week?
+
+Best,
+{sender_name}`,
+  },
+  {
+    id: 'freelance-pitch',
+    name: '💼 Freelance Services Pitch',
+    subject: 'Helping {company} grow — worth a look?',
+    body: `Hi {name},
+
+I help businesses like {company} attract more clients through strategic [your service].
+
+I've been following what {company} is doing and I have a few ideas that could directly impact your growth.
+
+I'll keep this short — would a 10-minute call be worthwhile for you?
+
+Warm regards,
+{sender_name}`,
+  },
+  {
+    id: 'partnership',
+    name: '🔗 Partnership Proposal',
+    subject: '{name}, partnership opportunity?',
+    body: `Hey {name},
+
+I run [your company] and I believe there's a natural partnership opportunity between us and {company}.
+
+Our audiences align closely and I think a collaboration could benefit both sides significantly.
+
+Happy to share more details if you're open to a quick conversation.
+
+Cheers,
+{sender_name}`,
+  },
+  {
+    id: 'follow-up',
+    name: '🔔 Follow-Up',
+    subject: 'Following up, {name}',
+    body: `Hi {name},
+
+I wanted to follow up on my previous email — I know things get busy.
+
+I genuinely believe there's something here worth exploring for {company}. I'd hate for this to get lost in the shuffle.
+
+Would this week work for a short call?
+
+Best,
+{sender_name}`,
+  },
+];
+
+// ═══════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  document.getElementById('nav-' + id).classList.add('active');
+
+  if (id === 'contacts') renderContacts();
+  if (id === 'templates') renderTemplates();
+  if (id === 'launch') updateLaunchStats();
+  if (id === 'analytics') updateAnalytics();
+}
+
+// ═══════════════════════════════════════════
+// EMAIL PARSING + NAME EXTRACTION
+// ═══════════════════════════════════════════
+function extractNameFromEmail(email) {
+  const local = email.split('@')[0];
+  // Strip numbers and special chars
+  const clean = local.replace(/[0-9_.\-+]/g, ' ').trim();
+  // Capitalise each word
+  const parts = clean.split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return toTitleCase(local.replace(/[^a-zA-Z]/g, ''));
+  return parts.map(toTitleCase).join(' ');
+}
+
+function extractCompanyFromEmail(email) {
+  const domain = email.split('@')[1];
+  if (!domain) return 'your company';
+  const base = domain.split('.')[0];
+  return toTitleCase(base);
+}
+
+function toTitleCase(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
+function isValidEmail(e) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
+}
+
+function parseContacts() {
+  const raw = document.getElementById('emailInput').value;
+  if (!raw.trim()) { toast('⚠️ Please paste some emails first.', 'warn'); return; }
+
+  const lines = raw.split(/[\n,;]+/).map(e => e.trim()).filter(Boolean);
+  const seen = new Set();
+  const results = [];
+  let dupes = 0, invalid = 0;
+
+  lines.forEach(email => {
+    if (!isValidEmail(email)) { invalid++; return; }
+    const normalized = email.toLowerCase();
+    if (seen.has(normalized)) { dupes++; return; }
+    seen.add(normalized);
+    results.push({
+      email: normalized,
+      name: extractNameFromEmail(email),
+      company: extractCompanyFromEmail(email),
+      valid: true,
+      duplicate: false,
+    });
+  });
+
+  state.contacts = results;
+  state.dupesCount = dupes;
+  state.invalidCount = invalid;
+
+  updateCounters();
+  log(`Parsed ${results.length} contacts. ${dupes} dupes removed, ${invalid} invalid skipped.`, dupes > 0 ? 'warn' : 'ok');
+  toast(`✅ ${results.length} contacts parsed!`);
+  renderContacts();
+}
+
+function updateEmailCount() {
+  const raw = document.getElementById('emailInput').value;
+  const count = raw.split(/[\n,;]+/).map(e => e.trim()).filter(e => isValidEmail(e)).length;
+  document.getElementById('emailCountBadge').textContent = count + ' email' + (count !== 1 ? 's' : '');
+}
+
+function clearContacts() {
+  document.getElementById('emailInput').value = '';
+  state.contacts = [];
+  updateCounters();
+  toast('Contacts cleared.');
+  renderContacts();
+}
+
+// ═══════════════════════════════════════════
+// FILE UPLOAD
+// ═══════════════════════════════════════════
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const text = ev.target.result;
+    // Extract emails from text
+    const emails = text.match(/[^\s@,;"'<>()[\]]+@[^\s@,;"'<>()[\]]+\.[^\s@,;"'<>()[\]]+/g) || [];
+    document.getElementById('emailInput').value = emails.join('\n');
+    updateEmailCount();
+    toast(`📂 File loaded — ${emails.length} emails found. Click Parse.`);
+    log(`File "${file.name}" loaded with ${emails.length} raw emails.`, 'info');
+  };
+  reader.readAsText(file);
+});
+
+const uploadZone = document.getElementById('uploadZone');
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault(); uploadZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) { document.getElementById('fileInput').files = e.dataTransfer.files; document.getElementById('fileInput').dispatchEvent(new Event('change')); }
+});
+
+// ═══════════════════════════════════════════
+// CONTACTS TABLE
+// ═══════════════════════════════════════════
+function renderContacts() {
+  const search = (document.getElementById('contactSearch')?.value || '').toLowerCase();
+  const filtered = state.contacts.filter(c =>
+    c.email.includes(search) || c.name.toLowerCase().includes(search) || c.company.toLowerCase().includes(search)
+  );
+
+  if (filtered.length === 0) {
+    document.getElementById('contactsTable').innerHTML = `<div class="empty-state"><span class="es-icon">👤</span><p>${state.contacts.length === 0 ? 'No contacts yet. Go to <strong>Compose</strong> to import emails.' : 'No results match your search.'}</p></div>`;
+    return;
+  }
+
+  let html = `<table><thead><tr><th>#</th><th>Email</th><th>Extracted Name</th><th>Company</th><th>Actions</th></tr></thead><tbody>`;
+  filtered.forEach((c, i) => {
+    html += `<tr>
+      <td style="color:var(--text-muted);font-family:var(--mono)">${i + 1}</td>
+      <td style="font-family:var(--mono);color:var(--blue)">${c.email}</td>
+      <td><span contenteditable="true" onblur="updateName(${state.contacts.indexOf(c)}, this.innerText)" style="outline:none;color:var(--text)">${c.name}</span></td>
+      <td><span contenteditable="true" onblur="updateCompany(${state.contacts.indexOf(c)}, this.innerText)" style="outline:none;color:var(--text-soft)">${c.company}</span></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="removeContact(${state.contacts.indexOf(c)})">✕</button></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('contactsTable').innerHTML = html;
+}
+
+function updateName(i, val) { if (state.contacts[i]) state.contacts[i].name = val.trim(); }
+function updateCompany(i, val) { if (state.contacts[i]) state.contacts[i].company = val.trim(); }
+function removeContact(i) {
+  state.contacts.splice(i, 1);
+  updateCounters(); renderContacts();
+  toast('Contact removed.');
+}
+
+// ═══════════════════════════════════════════
+// TEMPLATE ENGINE
+// ═══════════════════════════════════════════
+function fillTemplate(template, contact) {
+  const senderName = document.getElementById('senderName').value || 'The Team';
+  return template
+    .replace(/{name}/gi, contact.name || 'there')
+    .replace(/{company}/gi, contact.company || 'your company')
+    .replace(/{email}/gi, contact.email)
+    .replace(/{sender_name}/gi, senderName);
+}
+
+function fillSubject(template, contact) {
+  return fillTemplate(template, contact);
+}
+
+// ═══════════════════════════════════════════
+// GENERATE EMAILS
+// ═══════════════════════════════════════════
+function generateAll() {
+  if (state.contacts.length === 0) {
+    toast('⚠️ No contacts loaded. Go to Compose first.', 'warn');
+    showPanel('compose');
+    return;
+  }
+
+  const bodyTpl = document.getElementById('emailBody').value;
+  const subjectTpl = document.getElementById('subject').value;
+
+  if (!bodyTpl.trim()) { toast('⚠️ Email body is empty!', 'warn'); showPanel('compose'); return; }
+
+  state.generated = [];
+  const out = document.getElementById('generatedOutput');
+  out.innerHTML = '';
+
+  let i = 0;
+  const total = state.contacts.length;
+
+  const step = () => {
+    if (i >= total) {
+      updateLaunchStats();
+      updateAnalytics();
+      log(`Generated ${total} personalized emails.`, 'ok');
+      toast(`🚀 ${total} emails generated!`);
+      return;
+    }
+
+    const c = state.contacts[i];
+    const subject = fillSubject(subjectTpl, c);
+    const body = fillTemplate(bodyTpl, c);
+    state.generated.push({ ...c, subject, body });
+
+    const block = document.createElement('div');
+    block.style.cssText = 'border:1px solid var(--border);border-radius:6px;padding:1rem;margin-bottom:0.75rem;background:var(--surface2);';
+    block.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.6rem;">
+        <div>
+          <span style="font-family:var(--mono);font-size:0.78rem;color:var(--blue)">${c.email}</span>
+          <span style="margin-left:0.75rem;font-size:0.8rem;color:var(--text-soft)">→ <em>${subject}</em></span>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="copySingle(${i})">📋 Copy</button>
+      </div>
+      <div style="font-size:0.83rem;color:var(--text-soft);white-space:pre-wrap;line-height:1.65;">${escHtml(body)}</div>
+    `;
+    out.appendChild(block);
+    out.scrollTop = out.scrollHeight;
+
+    // Progress
+    const pct = Math.round(((i + 1) / total) * 100);
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressText').textContent = `${i + 1} / ${total}`;
+    document.getElementById('launchReady').textContent = i + 1;
+
+    state.sessionCount++;
+    document.getElementById('sessionCount').textContent = state.sessionCount;
+
+    i++;
+    setTimeout(step, 30);
+  };
+
+  step();
+}
+
+function copySingle(i) {
+  const g = state.generated[i];
+  if (!g) return;
+  const text = `To: ${g.email}\nSubject: ${g.subject}\n\n${g.body}`;
+  navigator.clipboard.writeText(text).then(() => toast('📋 Copied!'));
+}
+
+function copyAll() {
+  if (state.generated.length === 0) { toast('Nothing generated yet.', 'warn'); return; }
+  const text = state.generated.map(g => `To: ${g.email}\nSubject: ${g.subject}\n\n${g.body}\n\n${'─'.repeat(50)}`).join('\n');
+  navigator.clipboard.writeText(text).then(() => toast(`📋 All ${state.generated.length} emails copied!`));
+}
+
+function downloadAll() {
+  if (state.generated.length === 0) { toast('Nothing generated yet.', 'warn'); return; }
+  const text = state.generated.map(g => `To: ${g.email}\nSubject: ${g.subject}\n\n${g.body}\n\n${'─'.repeat(50)}`).join('\n');
+  const blob = new Blob([text], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'scoutier-campaign.txt';
+  a.click();
+  toast('⬇ Downloaded!');
+}
+
+// ═══════════════════════════════════════════
+// PREVIEW
+// ═══════════════════════════════════════════
+function previewSingle() {
+  if (state.contacts.length === 0) { toast('No contacts parsed yet.', 'warn'); return; }
+  const c = state.contacts[0];
+  const subject = fillSubject(document.getElementById('subject').value, c);
+  const body = fillTemplate(document.getElementById('emailBody').value, c);
+  showPanel('launch');
+  document.getElementById('previewCard').style.display = 'block';
+  document.getElementById('previewTo').textContent = c.email;
+  document.getElementById('previewSubject').textContent = subject;
+  document.getElementById('previewBody').textContent = body;
+}
+
+function copyPreview() {
+  const to = document.getElementById('previewTo').textContent;
+  const sub = document.getElementById('previewSubject').textContent;
+  const body = document.getElementById('previewBody').textContent;
+  navigator.clipboard.writeText(`To: ${to}\nSubject: ${sub}\n\n${body}`).then(() => toast('📋 Preview copied!'));
+}
+
+function openMailto() {
+  const to = document.getElementById('previewTo').textContent;
+  const sub = encodeURIComponent(document.getElementById('previewSubject').textContent);
+  const body = encodeURIComponent(document.getElementById('previewBody').textContent);
+  window.location.href = `mailto:${to}?subject=${sub}&body=${body}`;
+}
+
+// ═══════════════════════════════════════════
+// TEMPLATES
+// ═══════════════════════════════════════════
+function initTemplates() {
+  state.templates = [...BUILT_IN_TEMPLATES];
+  const saved = localStorage.getItem('scoutier_templates');
+  if (saved) state.templates.push(...JSON.parse(saved));
+}
+
+function renderTemplates() {
+  const grid = document.getElementById('templatesGrid');
+  grid.innerHTML = state.templates.map(t => `
+    <div class="card" style="cursor:default;">
+      <div class="card-title" style="margin-bottom:0.5rem">${t.name}</div>
+      <div style="font-size:0.78rem;color:var(--text-muted);font-family:var(--mono);margin-bottom:0.75rem;">Subject: ${t.subject}</div>
+      <div style="font-size:0.8rem;color:var(--text-soft);white-space:pre-wrap;line-height:1.6;max-height:120px;overflow:hidden;margin-bottom:1rem;">${escHtml(t.body)}</div>
+      <button class="btn btn-primary btn-sm" onclick="useTemplate('${t.id}')">Use Template →</button>
+    </div>
+  `).join('');
+}
+
+function useTemplate(id) {
+  const t = state.templates.find(t => t.id === id);
+  if (!t) return;
+  document.getElementById('subject').value = t.subject;
+  document.getElementById('emailBody').value = t.body;
+  showPanel('compose');
+  toast('✅ Template loaded!');
+}
+
+function saveTemplate() {
+  const name = prompt('Template name:');
+  if (!name) return;
+  const t = {
+    id: 'user-' + Date.now(),
+    name: '⭐ ' + name,
+    subject: document.getElementById('subject').value,
+    body: document.getElementById('emailBody').value,
+  };
+  state.templates.push(t);
+  const userTemplates = state.templates.filter(t => t.id.startsWith('user-'));
+  localStorage.setItem('scoutier_templates', JSON.stringify(userTemplates));
+  toast('💾 Template saved!');
+  log(`Template "${name}" saved.`, 'info');
+}
+
+// ═══════════════════════════════════════════
+// EXPORT CSV
+// ═══════════════════════════════════════════
+function exportCSV() {
+  if (state.contacts.length === 0) { toast('No contacts to export.', 'warn'); return; }
+  const rows = ['Email,Name,Company', ...state.contacts.map(c => `${c.email},"${c.name}","${c.company}"`)];
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'scoutier-contacts.csv';
+  a.click();
+  toast('⬇ CSV exported!');
+}
+
+// ═══════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════
+function updateCounters() {
+  const n = state.contacts.length;
+  document.getElementById('contactsLoaded').textContent = n;
+  document.getElementById('contactsBadge').textContent = n;
+}
+
+function updateLaunchStats() {
+  document.getElementById('launchTotal').textContent = state.contacts.length;
+  document.getElementById('launchReady').textContent = state.generated.length;
+  document.getElementById('launchDupes').textContent = state.dupesCount;
+  document.getElementById('launchInvalid').textContent = state.invalidCount;
+}
+
+function updateAnalytics() {
+  document.getElementById('aTotal').textContent = state.contacts.length;
+  document.getElementById('aGenerated').textContent = state.generated.length;
+  document.getElementById('aDupes').textContent = state.dupesCount;
+}
+
+function log(msg, type = 'info') {
+  const el = document.getElementById('activityLog');
+  const time = new Date().toLocaleTimeString();
+  const line = document.createElement('div');
+  line.className = `output-line ${type}`;
+  line.innerHTML = `<span class="ts">[${time}]</span><span class="msg">${msg}</span>`;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+let toastTimer;
+function toast(msg, type = 'ok') {
+  const el = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  el.querySelector('.toast-icon').textContent = type === 'warn' ? '⚠️' : '✓';
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+initTemplates();
+log('Scoutier ready. Import contacts to begin.', 'info');
+</script>
+</body>
+</html>
